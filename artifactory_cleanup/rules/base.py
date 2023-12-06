@@ -293,11 +293,12 @@ class CleanupPolicy(object):
                 print()
         return artifacts
 
-    def delete(self, artifact: ArtifactDict, destroy: bool) -> None:
+    def delete(self, artifact: ArtifactDict, destroy: bool, failover: bool) -> None:
         """
         Delete the artifact
         :param artifact: artifact to remove
         :param destroy: if False - just log the action, do not actually remove the artifact
+        :param failover: if True - just log the error and don't interrupt the exclusion the artifact
         """
         path = "{repo}/{name}" if artifact["path"] == "." else "{repo}/{path}/{name}"
         artifact_path = path.format(**artifact)
@@ -308,6 +309,11 @@ class CleanupPolicy(object):
             print(f"DEBUG - we would delete '{artifact_path}' - {size(artifact_size)}")
             return
 
-        print(f"DESTROY MODE - delete '{artifact_path} - {size(artifact_size)}'")
-        r = self.session.delete(artifact_path)
-        r.raise_for_status()
+        try:
+            print(f"DESTROY MODE - delete '{artifact_path} - {size(artifact_size)}'")
+            r = self.session.delete(artifact_path)
+        except Exception as error:
+            if failover:
+                print("An error occurred:", error)
+            else:
+                r.raise_for_status()

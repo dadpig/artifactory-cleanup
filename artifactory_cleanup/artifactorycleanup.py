@@ -21,12 +21,13 @@ class ArtifactoryCleanup:
         session: Session,
         policies: List[CleanupPolicy],
         destroy: bool,
-        today: date,
+        failover: bool,
+        today: date
     ):
         self.session = session
         self.policies = policies
         self.destroy = destroy
-
+        self.failover = failover
         self._init_policies(today)
 
     def _init_policies(self, today):
@@ -56,7 +57,7 @@ class ArtifactoryCleanup:
                 # Delete artifacts
                 for artifact in artifacts_to_remove:
                     with test_ctx_mgr(get_name_for_ci(artifact)):
-                        policy.delete(artifact, destroy=self.destroy)
+                        policy.delete(artifact, destroy=self.destroy, failover=self.failover)
 
             # Show summary
             print(f"Deleted artifacts count: {len(artifacts_to_remove)}")
